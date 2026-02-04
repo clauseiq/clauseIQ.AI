@@ -5,11 +5,11 @@ import { ExtractionResult, ExtractionMetadata } from '../types';
 // top-level await or initialization errors from breaking the entire application bundle.
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_TEXT_LENGTH = 300000; 
+const MAX_TEXT_LENGTH = 300000;
 
 // CONFIGURATION: Remote Worker Path via CDN
 // This ensures the worker is available without needing a local build step for the worker file.
-const PDF_WORKER_URL = 'https://esm.sh/pdfjs-dist@4.0.189/build/pdf.worker.mjs';
+const PDF_WORKER_URL = '/pdf.worker.mjs';
 
 const PDF_CMAP_URL = 'https://esm.sh/pdfjs-dist@4.0.189/cmaps/';
 const PDF_STANDARD_FONT_DATA_URL = 'https://esm.sh/pdfjs-dist@4.0.189/standard_fonts/';
@@ -27,7 +27,7 @@ export const extractTextFromFile = async (file: File): Promise<ExtractionResult>
 
   try {
     const extension = file.name.split('.').pop()?.toLowerCase();
-    
+
     // Robust file type detection
     const isPDF = file.type === 'application/pdf' || extension === 'pdf';
     const isWord = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || extension === 'docx';
@@ -58,7 +58,7 @@ export const extractTextFromFile = async (file: File): Promise<ExtractionResult>
     }
 
     const sectionsDetected = countSections(extractedText);
-    
+
     const previewStart = extractedText.substring(0, 1000) + (extractedText.length > 1000 ? '...' : '');
     const previewEnd = extractedText.length > 1000 ? '...' + extractedText.substring(extractedText.length - 1000) : extractedText;
 
@@ -97,21 +97,21 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
     }
     const pdfjsModule = await pdfjsModulePromise;
     const pdfjsLib = pdfjsModule.default || pdfjsModule;
-    
+
     // Configure worker ONLY if not already set
     if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Ensure getDocument exists
     if (!pdfjsLib.getDocument) {
-       throw new Error("PDF Library failed to load correctly.");
+      throw new Error("PDF Library failed to load correctly.");
     }
 
     // Pass cMap parameters and disable some features for mobile performance
-    const loadingTask = pdfjsLib.getDocument({ 
+    const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       cMapUrl: PDF_CMAP_URL,
       cMapPacked: true,
@@ -121,39 +121,39 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
     });
 
     const pdf = await loadingTask.promise;
-    
+
     // Cap pages strictly to 30 for performance on mobile devices
-    const maxPages = 30; 
+    const maxPages = 30;
     const pagesToProcess = Math.min(pdf.numPages, maxPages);
     const chunkedResults: string[] = new Array(pagesToProcess + 1).fill('');
-    
+
     // PARALLEL BATCH PROCESSING
     const BATCH_SIZE = 3;
 
     for (let i = 1; i <= pagesToProcess; i += BATCH_SIZE) {
-        const batchPromises = [];
-        for (let j = i; j < i + BATCH_SIZE && j <= pagesToProcess; j++) {
-            batchPromises.push(pdf.getPage(j).then(async (page: any) => {
-                try {
-                    const textContent = await page.getTextContent();
-                    const text = textContent.items.map((item: any) => item.str).join(' ');
-                    // Essential: Clean up page resources immediately
-                    page.cleanup();
-                    return { pageNum: j, text };
-                } catch (e) {
-                    console.warn(`Error parsing page ${j}`, e);
-                    return { pageNum: j, text: "[Error parsing page]" };
-                }
-            }));
-        }
-        
-        const results = await Promise.all(batchPromises);
-        results.forEach(r => {
-            chunkedResults[r.pageNum] = r.text;
-        });
-        
-        // Small yield to UI thread to prevent freezing
-        await new Promise(resolve => setTimeout(resolve, 10));
+      const batchPromises = [];
+      for (let j = i; j < i + BATCH_SIZE && j <= pagesToProcess; j++) {
+        batchPromises.push(pdf.getPage(j).then(async (page: any) => {
+          try {
+            const textContent = await page.getTextContent();
+            const text = textContent.items.map((item: any) => item.str).join(' ');
+            // Essential: Clean up page resources immediately
+            page.cleanup();
+            return { pageNum: j, text };
+          } catch (e) {
+            console.warn(`Error parsing page ${j}`, e);
+            return { pageNum: j, text: "[Error parsing page]" };
+          }
+        }));
+      }
+
+      const results = await Promise.all(batchPromises);
+      results.forEach(r => {
+        chunkedResults[r.pageNum] = r.text;
+      });
+
+      // Small yield to UI thread to prevent freezing
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
 
     let fullText = chunkedResults.map((t, i) => i === 0 ? '' : `\n--- PAGE ${i} ---\n\n${t}\n\n`).join('');
@@ -168,18 +168,18 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
     return { text: fullText, pages: pdf.numPages };
   } catch (err: any) {
     console.error("PDF Parsing Error:", err);
-    
+
     let message = "Failed to parse PDF.";
     if (err.message && err.message.includes("Cannot read properties of undefined")) {
-       message = "PDF Parsing Error: Library version mismatch. Please reload the page.";
+      message = "PDF Parsing Error: Library version mismatch. Please reload the page.";
     } else if (err.name === 'PasswordException') {
-       message = "PDF is password protected.";
+      message = "PDF is password protected.";
     } else if (err.message && err.message.includes("worker")) {
-       message = "PDF Worker Error: Could not load PDF processor. Check your connection.";
+      message = "PDF Worker Error: Could not load PDF processor. Check your connection.";
     } else if (err.message && err.message.includes("Setting up fake worker")) {
-       message = "PDF Worker missing. Please ensure pdf.worker.min.mjs is in public folder.";
+      message = "PDF Worker missing. Please ensure pdf.worker.min.mjs is in public folder.";
     }
-    
+
     throw new Error(message);
   }
 };
@@ -204,9 +204,9 @@ const extractImageText = async (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-        const result = reader.result as string;
-        const base64Data = result.split(',')[1];
-        resolve(base64Data);
+      const result = reader.result as string;
+      const base64Data = result.split(',')[1];
+      resolve(base64Data);
     };
     reader.onerror = reject;
   });
