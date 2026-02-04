@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://lucide.dev/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>Clause IQ | AI Contract Risk Analysis</title>
+    <meta name="title" content="Clause IQ | AI Contract Risk Analysis" />
+    <meta name="description" content="Instant AI-powered contract review for founders and freelancers. Identify financial risks, operational bottlenecks, and unfair terms in seconds." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://clauseiq.com/" />
+    <meta property="og:title" content="Clause IQ | AI Contract Risk Analysis" />
+    <meta property="og:description" content="Instant AI-powered contract review for founders and freelancers. Identify financial risks, operational bottlenecks, and unfair terms in seconds." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=1200" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://clauseiq.com/" />
+    <meta property="twitter:title" content="Clause IQ | AI Contract Risk Analysis" />
+    <meta property="twitter:description" content="Instant AI-powered contract review for founders and freelancers. Identify financial risks, operational bottlenecks, and unfair terms in seconds." />
+    <meta property="twitter:image" content="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=1200" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              dark: {
+                bg: '#020617', // Slate 950
+                card: '#0f172a', // Slate 900
+                border: '#1e293b', // Slate 800
+                text: '#f8fafc', // Slate 50
+                muted: '#94a3b8', // Slate 400
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'slide-in': 'slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'slide-up': 'slideUp 0.5s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideIn: {
+                '0%': { transform: 'translateX(100%)' },
+                '100%': { transform: 'translateX(0)' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        background-color: #fdfdfd;
+        color: #1a1c21;
+        overflow-x: hidden;
+      }
+      
+      html.dark body {
+        background-color: #020617;
+        color: #f8fafc;
+      }
+
+      .gradient-text {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .gradient-bg {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      }
+
+      .soft-gradient-bg {
+        background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+      }
+      
+      html.dark .soft-gradient-bg {
+        background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.05) 100%);
+      }
+
+      @keyframes rock {
+        0%, 100% { transform: rotate(-8deg); }
+        50% { transform: rotate(8deg); }
+      }
+      .animate-rock {
+        animation: rock 3s ease-in-out infinite;
+      }
+
+      @keyframes fade-slide-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-reveal {
+        animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+      .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+      .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+
+      .parallax-container {
+        perspective: 1000px;
+      }
+      .parallax-card {
+        transition: transform 0.1s ease-out;
+        transform-style: preserve-3d;
+      }
+
+      /* SEASON LOADER ANIMATIONS */
+      .rain-drop {
+        position: absolute;
+        width: 1px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.3);
+        top: -50px;
+        animation: fall linear infinite;
+      }
+      @keyframes fall {
+        to { transform: translateY(110vh); }
+      }
+
+      .snowflake {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+        top: -10px;
+        animation: snow linear infinite;
+      }
+      @keyframes snow {
+        to { transform: translateY(110vh) translateX(20px); }
+      }
+      
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 4px;
+      }
+      html.dark ::-webkit-scrollbar-thumb {
+        background: #334155; 
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+      }
+
+      /* --- PRINT STYLES --- */
+      @media print {
+        @page {
+          margin: 1cm;
+        }
+        
+        body {
+          background-color: white !important;
+          color: black !important;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+
+        /* Reset all text colors to black/dark gray for readability */
+        p, h1, h2, h3, h4, h5, h6, span, div {
+          color: #0f172a !important; 
+          text-shadow: none !important;
+        }
+
+        /* Force white backgrounds on containers */
+        .bg-slate-50, .dark\:bg-slate-800, .bg-white, .dark\:bg-slate-900, .dark\:bg-slate-950 {
+          background-color: white !important;
+          background-image: none !important;
+          box-shadow: none !important;
+        }
+
+        /* Hide elements explicitly */
+        .no-print, nav, footer, button, .print\:hidden {
+          display: none !important;
+        }
+
+        /* Ensure borders are visible */
+        .border {
+          border-color: #e2e8f0 !important;
+        }
+        
+        /* Ensure layout works */
+        .lg\:grid-cols-12 {
+          display: block !important;
+        }
+        
+        /* Prevent page breaks inside cards */
+        .rounded-\[32px\], .rounded-2xl {
+           break-inside: avoid;
+           border: 1px solid #e2e8f0 !important;
+           border-radius: 12px !important;
+           margin-bottom: 20px;
+        }
+      }
+
+    </style>
+    <script>
+      // Initial Theme Check
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.0.189",
+    "mammoth": "https://esm.sh/mammoth@^1.11.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "@vercel/node": "https://esm.sh/@vercel/node@^5.5.23",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "razorpay": "https://esm.sh/razorpay@^2.9.6",
+    "crypto": "https://esm.sh/crypto@^1.0.1",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
