@@ -81,21 +81,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let updateData: any = {};
       
       if (planType === 'pro_monthly') {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ plan: 'Pro' })
-          .eq('id', user.id);
-          
-        if (error) throw error;
+        updateData = { plan: 'Pro' };
       } else if (planType === 'topup_5') {
-        // Logic: Reduce 'analyses_used' counter by 5 (technically we "remove" 5 from the used count, 
-        // effectively giving them 5 more. Or if we track "credits", we add 5. 
-        // The original code was: updateData = { analyses_used: Math.max(-100, currentUsed - 5) };
-        // So we are SUBTRACTING 5 from the "used" count.
-        // We will call our RPC with -5.
-        const { error } = await supabase.rpc('decrement_credits', { user_id: user.id, amount: -5 });
-        
-        if (error) throw error;
+        // Logic: Reduce 'analyses_used' counter by 5 to give 5 more credits.
+        const { data: profile } = await supabase.from('profiles').select('analyses_used').eq('id', user.id).single();
+        const currentUsed = profile?.analyses_used || 0;
+        updateData = { analyses_used: Math.max(-100, currentUsed - 5) }; 
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Database Update Error:', error);
+        return res.status(500).json({ error: 'Payment verified but failed to update plan' });
       }
 
       return res.status(200).json({ success: true, planType });

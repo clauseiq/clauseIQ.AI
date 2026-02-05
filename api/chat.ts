@@ -24,7 +24,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { contractText, history, question } = req.body;
   if (!contractText || !question) return res.status(400).json({ error: 'Required fields missing' });
 
-  // STRICT AUTH
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -51,33 +50,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const systemInstruction = `You are Clause IQ. Answer strictly based on the Contract Text provided.
     CONTRACT TEXT: """${contractText.substring(0, 100000)}"""`;
 
-    // Simple Retry for Chat
     let retries = 3;
     let response;
     while (retries > 0) {
       try {
         response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-flash-latest',
           contents: contents,
           config: { systemInstruction },
         });
         break;
       } catch (err: any) {
-        if (err.status === 503 || err.status === 429) {
+        const errMsg = err.message?.toLowerCase() || '';
+        if (err.status === 429 && (errMsg.includes('quota') || errMsg.includes('limit') || errMsg.includes('exhausted'))) {
+            throw new Error("QUOTA_EXCEEDED");
+        }
+        if ((err.status === 503 || err.status === 429) && retries > 1) {
           retries--;
-          if (retries === 0) throw err;
-          await new Promise(r => setTimeout(r, 1000));
+          const delay = Math.pow(2, (3 - retries)) * 1000 + Math.random() * 500;
+          await new Promise(r => setTimeout(r, delay));
         } else {
           throw err;
         }
       }
     }
 
-    if (!response) throw new Error("Failed to get response");
-
+    if (!response) throw new Error("Failed to get response.");
     return res.status(200).json({ answer: response.text });
   } catch (error) {
     console.error("Chat Error:", error);
+    if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
+       return res.status(402).json({ error: "API quota exceeded. Please upgrade your plan or check your billing." });
+    }
     return res.status(500).json({ error: "Failed to generate answer." });
   }
 }
