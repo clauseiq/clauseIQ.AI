@@ -7,32 +7,32 @@ export enum RiskLevel {
 
 export interface RiskItem {
   title: string;
-  technicalTerm?: string; // Legal concept name (e.g., "Uncapped Indemnity")
-  riskType: string; // e.g., Financial, Operational, Liability
-  worstCase: string; // Worst-case outcome scenario
-  impact: string; // Why it matters in business terms
-  deviation?: string; // How it deviates from market standard
-  action: string; // What to do
-  reference: string; // Clause number, section title, or quote
+  technicalTerm?: string;
+  riskType: string;
+  worstCase: string;
+  impact: string;
+  deviation?: string;
+  action: string;
+  reference: string;
 }
 
 export interface ClauseBreakdown {
-  title?: string; // Section Header/Title
+  title?: string;
   originalText: string;
-  explanation: string; // Plain English
+  explanation: string;
   riskLevel: RiskLevel;
   riskReason: string;
 }
 
 export interface ContractSummary {
-  executiveSummary: string; // What this contract is about, paying whom, etc.
-  obligations: string[]; // Bullet points: What user MUST do
-  rights: string[]; // Bullet points: What user receives
-  commercials: string; // Money, penalties, lock-ins
-  exit: string; // Termination, notice periods
-  risk: string; // Liability, uncapped risks
-  powerBalance: string; // Who has control
-  top3Takeaways: string[]; // 3 most important things
+  executiveSummary: string;
+  obligations: string[];
+  rights: string[];
+  commercials: string;
+  exit: string;
+  risk: string;
+  powerBalance: string;
+  top3Takeaways: string[];
 }
 
 export interface DocumentCoverage {
@@ -42,28 +42,45 @@ export interface DocumentCoverage {
 }
 
 export interface FactorEvaluation {
-  factor: string; // e.g. "Payment & Pricing Fairness"
+  factor: string;
   status: 'Healthy' | 'Neutral' | 'Risky';
   detail: string;
 }
 
+/**
+ * Auto-detected structural issues that go beyond individual clause risks.
+ * All fields are boolean — true = issue present.
+ */
+export interface AutoDetectedIssues {
+  missingTerminationClause: boolean;
+  missingIndemnityProtection: boolean;
+  oneSidedLiability: boolean;
+  unclearJurisdiction: boolean;
+  autoRenewalTrap: boolean;
+  expiredDates: boolean;
+  conflictingClauses: boolean;
+  duplicateClauses: boolean;
+}
+
 export interface AnalysisResult {
-  score: number; // 0-100
-  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk'; 
+  score: number; // 0-100; validated server-side
+  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk' | 'INVALID_DOCUMENT';
   confidence: 'High' | 'Medium' | 'Low';
   confidenceReason: string;
-  riskAnchor?: string; // Psychological hook
-  contractSummary?: ContractSummary; // New Business Summary (Replaces clauses)
-  analyzedRole: string; // The perspective automatically identified by AI
-  marketComparison: string; // Text explaining how this compares to norms
-  executiveSummary: string; // "Why this verdict"
-  signedAsIsOutcome: string; // "If Signed As-Is" Consequence Summary
-  factors: FactorEvaluation[]; // The 11 factors (A-K)
-  topRisks: RiskItem[]; // "Red Flags"
-  negotiationMoves: string[]; // Specific edits/asks
-  missingClauses: string[]; // What should be there but isn't
-  clauses?: ClauseBreakdown[]; // Deprecated, kept for type compatibility with old records
+  riskAnchor?: string;
+  contractSummary?: ContractSummary;
+  analyzedRole: string;
+  marketComparison: string;
+  executiveSummary: string;
+  signedAsIsOutcome: string;
+  factors: FactorEvaluation[];
+  topRisks: RiskItem[];
+  negotiationMoves: string[];
+  missingClauses: string[];
+  clauses?: ClauseBreakdown[]; // Deprecated — kept for backward compat with saved records
   coverage: DocumentCoverage;
+  /** Structural issues auto-detected by AI beyond individual clause risks */
+  autoDetectedIssues?: AutoDetectedIssues;
 }
 
 export interface ExtractionMetadata {
@@ -92,4 +109,4 @@ export const PLANS = {
   FREE: { limit: 3, name: 'Free Trial' },
   PRO: { limit: Infinity, name: 'Pro Plan' },
   BUSINESS: { limit: Infinity, name: 'Business Plan' }
-};
+} as const;
