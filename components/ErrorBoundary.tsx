@@ -16,17 +16,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   // but addresses a specific TypeScript error where it might not be inferred correctly.
   public state: State = { hasError: false };
 
-  // Fix: Explicitly declare the 'props' property as a readonly class field.
-  // This is technically redundant as 'props' is inherited from React.Component,
-  // but addresses a specific TypeScript error where it might not be inferred correctly.
-  public readonly props: Props;
 
   constructor(props: Props) {
     super(props);
-    // The original `this.state = { hasError: false };` initialization was here (line 16).
-    // It has been moved to the class field declaration above to ensure the 'state' property
-    // is explicitly declared and initialized at the class level, addressing the type error.
-    // 'props' are implicitly handled by super(props) and React.Component.
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -52,14 +44,14 @@ export class ErrorBoundary extends React.Component<Props, State> {
               We encountered an unexpected error. Our team has been notified. Please try refreshing the page.
             </p>
             <div className="flex flex-col space-y-3">
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 className="w-full py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reload Application
               </button>
-              <button 
+              <button
                 onClick={() => window.location.href = '/'}
                 className="w-full py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
               >
@@ -68,11 +60,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
               </button>
             </div>
             {this.state.error && (
-               <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-left">
-                  <p className="text-xs font-mono text-slate-400 break-all bg-slate-50 dark:bg-slate-950 p-3 rounded-lg">
-                    {this.state.error.toString()}
-                  </p>
-               </div>
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-left">
+                <p className="text-xs font-mono text-slate-400 break-all bg-slate-50 dark:bg-slate-950 p-3 rounded-lg">
+                  {this.state.error.toString()}
+                </p>
+              </div>
             )}
           </div>
         </div>

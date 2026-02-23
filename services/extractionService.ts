@@ -2,7 +2,7 @@ import { performOCR } from './geminiService';
 import { ExtractionResult, ExtractionMetadata } from '../types';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_TEXT_LENGTH = 300000; 
+const MAX_TEXT_LENGTH = 300000;
 
 // Using a consistent CDN for both lib and worker
 const PDFJS_VERSION = '4.0.189';
@@ -20,7 +20,7 @@ export const extractTextFromFile = async (file: File): Promise<ExtractionResult>
 
   try {
     const extension = file.name.split('.').pop()?.toLowerCase();
-    
+
     const isPDF = file.type === 'application/pdf' || extension === 'pdf';
     const isWord = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || extension === 'docx';
     const isImage = file.type.startsWith('image/') || ['jpg', 'jpeg', 'png'].includes(extension || '');
@@ -43,8 +43,8 @@ export const extractTextFromFile = async (file: File): Promise<ExtractionResult>
 
     // IF NO TEXT WAS EXTRACTED FROM PDF, IT MIGHT BE SCANNED. TRY OCR.
     if (isPDF && (!extractedText || extractedText.replace(/--- PAGE \d+ ---/g, '').trim().length < 50)) {
-        console.log("Empty PDF detected, falling back to Gemini OCR...");
-        extractedText = await extractImageText(file);
+      console.log("Empty PDF detected, falling back to Gemini OCR...");
+      extractedText = await extractImageText(file);
     }
 
     if (!extractedText) {
@@ -56,7 +56,7 @@ export const extractTextFromFile = async (file: File): Promise<ExtractionResult>
     }
 
     const sectionsDetected = countSections(extractedText);
-    
+
     const metadata: ExtractionMetadata = {
       pagesDetected,
       charactersExtracted: extractedText.length,
@@ -86,22 +86,23 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
   try {
     if (!pdfjsModulePromise) {
       // Import the library from esm.sh to match importmap
+      // @ts-ignore — ESM CDN URL is resolved by the browser importmap at runtime
       pdfjsModulePromise = import('https://esm.sh/pdfjs-dist@4.0.189');
     }
     const pdfjsLib = await pdfjsModulePromise;
-    
+
     // Configure worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
 
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ 
+    const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       useSystemFonts: true,
-      stopAtErrors: false 
+      stopAtErrors: false
     });
 
     const pdf = await loadingTask.promise;
-    const maxPages = 40; 
+    const maxPages = 40;
     const pagesToProcess = Math.min(pdf.numPages, maxPages);
     let fullText = '';
 
@@ -113,7 +114,7 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
           .map((item: any) => item.str)
           .join(' ')
           .replace(/\s+/g, ' ');
-        
+
         fullText += `\n--- PAGE ${i} ---\n\n${pageText}\n\n`;
         page.cleanup();
       } catch (pageErr) {
