@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
@@ -10,12 +10,23 @@ interface State {
   error?: Error;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends React.Component<Props, State> {
+  // Fix: Explicitly declare the 'state' property as a class field.
+  // This is typically redundant as 'state' is inherited from React.Component,
+  // but addresses a specific TypeScript error where it might not be inferred correctly.
+  public state: State = { hasError: false };
+
+  // Fix: Explicitly declare the 'props' property as a readonly class field.
+  // This is technically redundant as 'props' is inherited from React.Component,
+  // but addresses a specific TypeScript error where it might not be inferred correctly.
+  public readonly props: Props;
+
   constructor(props: Props) {
     super(props);
-    this.state = {
-      hasError: false
-    };
+    // The original `this.state = { hasError: false };` initialization was here (line 16).
+    // It has been moved to the class field declaration above to ensure the 'state' property
+    // is explicitly declared and initialized at the class level, addressing the type error.
+    // 'props' are implicitly handled by super(props) and React.Component.
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -27,6 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    // Fix: Access state and props directly after explicit declaration (lines 30, 57, 60, 69).
+    // This leverages the class field declarations to resolve the reported errors.
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex items-center justify-center p-6 font-sans">

@@ -34,7 +34,13 @@ export const getQuickAnchor = async (
       }),
     });
 
-    if (!response.ok) throw new Error("Failed to get anchor");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 402) {
+         throw new Error("QUOTA_LIMIT_REACHED");
+      }
+      throw new Error(errorData.error || "Failed to get immediate impression.");
+    }
     return await response.json();
 
   } catch (error) {
@@ -69,7 +75,7 @@ export const analyzeContract = async (
       const errorData = await response.json().catch(() => ({}));
       // Check for monetization blockers (402)
       if (response.status === 402) {
-         throw new Error("PLAN_LIMIT_REACHED");
+         throw new Error("PLAN_LIMIT_REACHED"); // Internal plan limit
       }
       throw new Error(errorData.error || `Server Error: ${response.status}`);
     }
@@ -121,7 +127,11 @@ export const performOCR = async (base64Image: string, mimeType: string): Promise
     });
 
     if (!response.ok) {
-      throw new Error(`OCR Server Error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 402) {
+         throw new Error("QUOTA_LIMIT_REACHED");
+      }
+      throw new Error(errorData.error || `OCR Server Error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -161,6 +171,9 @@ export const askContractQuestion = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 402) {
+         throw new Error("QUOTA_LIMIT_REACHED");
+      }
       throw new Error(errorData.error || "Failed to get answer");
     }
 

@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // Listen on all network interfaces (0.0.0.0) to fix "refused to connect" on some setups
+    host: true,
     port: 3000,
-    strictPort: true, // Don't switch ports silently
+    strictPort: true,
   },
   preview: {
     port: 3000,
@@ -14,6 +14,15 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-utils': ['lucide-react', 'pdfjs-dist', 'mammoth'],
+          'vendor-supabase': ['@supabase/supabase-js']
+        }
+      }
+    }
   },
   worker: {
     format: 'es',

@@ -424,14 +424,8 @@ ${text.substring(0, 150_000)}
     res.setHeader('Transfer-Encoding', 'chunked');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
-    let fullResponseText = '';
-
     for await (const chunk of streamResult) {
-      const chunkText = chunk.text;
-      if (chunkText) {
-        fullResponseText += chunkText;
-        res.write(chunkText);
-      }
+      if (chunk.text) res.write(chunk.text);
     }
 
     // Save to DB — catch errors silently to not fail the stream
