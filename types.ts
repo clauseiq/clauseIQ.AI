@@ -66,7 +66,7 @@ export interface Decision {
 
 export interface AnalysisResult {
   score: number; // 0-100 (Weighted Aggregate)
-  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk'; 
+  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk' | 'INVALID_DOCUMENT'; 
   confidence: 'High' | 'Medium' | 'Low';
   confidenceReason: string;
   riskAnchor?: string; // Psychological hook
@@ -75,18 +75,18 @@ export interface AnalysisResult {
   categoryScores: CategoryScore[];
   professionalSummary: ProfessionalSummary;
   decision: Decision;
-  
-  // Legacy/Helper fields
-  analyzedRole: string; // The perspective automatically identified by AI
-  marketComparison: string; // Text explaining how this compares to norms
-  executiveSummary: string; // "Why this verdict" (Keep for backward compat or simple view)
-  signedAsIsOutcome: string; // "If Signed As-Is" Consequence Summary
-  factors: FactorEvaluation[]; // The 11 factors (A-K) - Keep for backward compat if needed, or map to categories
   topRisks: RiskItem[]; // "Red Flags"
-  negotiationMoves: string[]; // Specific edits/asks
-  missingClauses: string[]; // What should be there but isn't
-  clauses?: ClauseBreakdown[]; // Deprecated, kept for type compatibility with old records
   coverage: DocumentCoverage;
+  
+  // Legacy/Helper fields (Optional/Deprecated)
+  analyzedRole?: string; 
+  marketComparison?: string; 
+  executiveSummary?: string; 
+  signedAsIsOutcome?: string; 
+  factors?: FactorEvaluation[]; 
+  negotiationMoves?: string[]; 
+  missingClauses?: string[]; 
+  clauses?: ClauseBreakdown[]; 
 }
 
 export interface DocumentCoverage {

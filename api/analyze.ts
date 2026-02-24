@@ -31,11 +31,6 @@ const analysisSchema: Schema = {
     verdict: { type: Type.STRING, enum: ["Market-Standard", "Negotiable", "One-Sided", "High Risk", "INVALID_DOCUMENT"] },
     confidence: { type: Type.STRING, enum: ["High", "Medium", "Low"] },
     confidenceReason: { type: Type.STRING },
-    riskAnchor: { type: Type.STRING, description: "A SINGLE short sentence (max 20 words) highlighting the MOST IMPORTANT BUSINESS RISK. Create urgency. No legal jargon." },
-    analyzedRole: { type: Type.STRING },
-    marketComparison: { type: Type.STRING },
-    executiveSummary: { type: Type.STRING },
-    signedAsIsOutcome: { type: Type.STRING, description: "A realistic scenario-based summary of consequences if signed as-is." },
     
     categoryScores: {
       type: Type.ARRAY,
@@ -102,29 +97,6 @@ const analysisSchema: Schema = {
       required: ["status", "color", "confidenceScore", "reasoning"]
     },
 
-    factors: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          factor: { type: Type.STRING },
-          status: { type: Type.STRING, enum: ["Healthy", "Neutral", "Risky"] },
-          detail: { type: Type.STRING }
-        },
-        required: ["factor", "status", "detail"]
-      }
-    },
-    missingClauses: { type: Type.ARRAY, items: { type: Type.STRING } },
-    negotiationMoves: { type: Type.ARRAY, items: { type: Type.STRING } },
-    coverage: {
-      type: Type.OBJECT,
-      properties: {
-        sectionsCovered: { type: Type.INTEGER },
-        skippedSections: { type: Type.ARRAY, items: { type: Type.STRING } },
-        isComplete: { type: Type.BOOLEAN }
-      },
-      required: ["sectionsCovered", "skippedSections", "isComplete"]
-    },
     topRisks: {
       type: Type.ARRAY,
       items: {
@@ -143,8 +115,18 @@ const analysisSchema: Schema = {
         required: ["title", "technicalTerm", "riskType", "worstCase", "impact", "deviation", "action", "reference", "severity"],
       },
     },
+    
+    coverage: {
+      type: Type.OBJECT,
+      properties: {
+        sectionsCovered: { type: Type.INTEGER },
+        skippedSections: { type: Type.ARRAY, items: { type: Type.STRING } },
+        isComplete: { type: Type.BOOLEAN }
+      },
+      required: ["sectionsCovered", "skippedSections", "isComplete"]
+    }
   },
-  required: ["score", "verdict", "confidence", "confidenceReason", "riskAnchor", "analyzedRole", "marketComparison", "executiveSummary", "signedAsIsOutcome", "categoryScores", "professionalSummary", "decision", "factors", "missingClauses", "negotiationMoves", "topRisks", "coverage"],
+  required: ["score", "verdict", "confidence", "confidenceReason", "categoryScores", "professionalSummary", "decision", "topRisks", "coverage"],
 };
 
 const anchorSchema: Schema = {
@@ -298,9 +280,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          - Financial Risk Estimate (if possible)
 
       4. Identify up to 5 Critical Issues ("topRisks") with severity (Low, Medium, High, Critical).
-      5. Provide a "If Signed As-Is" Consequence Summary ("signedAsIsOutcome").
-      6. Generate a "Risk Anchor" ("riskAnchor").
-      7. Populate "factors" (A-K) for backward compatibility (map from categories if needed).
       
       Text: "${text.substring(0, 150000)}" 
     `;

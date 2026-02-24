@@ -139,6 +139,11 @@ export const Dashboard: React.FC = () => {
     try {
       const result = await analyzeContract(contractText, country, contractType);
       
+      // Inject the quick anchor if the full analysis doesn't have one (it likely won't anymore)
+      if (quickAnchor && !result.riskAnchor) {
+        result.riskAnchor = quickAnchor.riskAnchor;
+      }
+      
       if (activeTab === 'upload') {
         // For upload tab, we show the Analysis Complete Card instead of navigating
         setAnalysisResult(result);

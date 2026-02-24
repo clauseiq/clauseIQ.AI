@@ -375,7 +375,7 @@ export const AnalysisResultPage: React.FC = () => {
                        </div>
                     </div>
 
-                    {result.professionalSummary.missingProtections.length > 0 && (
+                    {result.professionalSummary.missingProtections && result.professionalSummary.missingProtections.length > 0 && (
                        <div className="bg-amber-50 dark:bg-amber-900/10 p-6 rounded-2xl border border-amber-100 dark:border-amber-900/30 shadow-sm">
                           <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-4 flex items-center">
                              <ListPlus className="h-4 w-4 mr-2" /> Missing Protections
