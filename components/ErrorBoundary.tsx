@@ -11,22 +11,9 @@ interface State {
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  // Fix: Explicitly declare the 'state' property as a class field.
-  // This is typically redundant as 'state' is inherited from React.Component,
-  // but addresses a specific TypeScript error where it might not be inferred correctly.
-  public state: State = { hasError: false };
-
-  // Fix: Explicitly declare the 'props' property as a readonly class field.
-  // This is technically redundant as 'props' is inherited from React.Component,
-  // but addresses a specific TypeScript error where it might not be inferred correctly.
-  public readonly props: Props;
-
   constructor(props: Props) {
     super(props);
-    // The original `this.state = { hasError: false };` initialization was here (line 16).
-    // It has been moved to the class field declaration above to ensure the 'state' property
-    // is explicitly declared and initialized at the class level, addressing the type error.
-    // 'props' are implicitly handled by super(props) and React.Component.
+    this.state = { hasError: false };
   }
 
   public static getDerivedStateFromError(error: Error): State {

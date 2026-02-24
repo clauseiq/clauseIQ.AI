@@ -1,12 +1,12 @@
 import React from 'react';
 import { useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { ContractSummary, ClauseBreakdown, RiskLevel } from '../types';
-import { ArrowLeft, CheckCircle2, DollarSign, LogOut, ShieldAlert, Scale, ChevronDown, ChevronUp } from 'lucide-react';
+import { ProfessionalSummary, ClauseBreakdown, RiskLevel } from '../types';
+import { ArrowLeft, CheckCircle2, DollarSign, LogOut, ShieldAlert, Scale, ChevronDown, ChevronUp, ListPlus } from 'lucide-react';
 
 export const Walkthrough: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const summary = location.state?.summary as ContractSummary | undefined;
+  const summary = location.state?.summary as ProfessionalSummary | undefined;
   // Fallback for old analyses without summary
   const clauses = location.state?.clauses as ClauseBreakdown[] | undefined;
 
@@ -92,115 +92,104 @@ export const Walkthrough: React.FC = () => {
 
       <div className="space-y-8">
          
-         {/* 1. Executive Summary */}
+         {/* 1. Overview */}
          <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 md:p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Executive Summary</h2>
-            <p className="text-lg md:text-xl text-slate-900 dark:text-white leading-relaxed font-medium">
-               {summary.executiveSummary}
-            </p>
+            <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 className="text-sm font-bold text-slate-500 mb-1">Nature of Agreement</h3>
+                    <p className="text-lg font-medium text-slate-900 dark:text-white">{summary.overview.natureOfAgreement}</p>
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-slate-500 mb-1">Duration</h3>
+                    <p className="text-lg font-medium text-slate-900 dark:text-white">{summary.overview.duration}</p>
+                </div>
+                <div className="md:col-span-2">
+                    <h3 className="text-sm font-bold text-slate-500 mb-1">Core Purpose</h3>
+                    <p className="text-lg font-medium text-slate-900 dark:text-white">{summary.overview.corePurpose}</p>
+                </div>
+            </div>
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* 2. Obligations */}
+            {/* 2. Commercial Terms */}
             <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
                <div className="flex items-center mb-6">
                   <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg mr-3">
-                     <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                     <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your Obligations</h2>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Commercial Terms</h2>
                </div>
-               <ul className="space-y-4 flex-grow">
-                  {summary.obligations.map((item, i) => (
-                     <li key={i} className="flex items-start text-slate-700 dark:text-slate-300">
-                        <span className="mr-3 mt-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></span>
-                        <span className="leading-relaxed">{item}</span>
-                     </li>
-                  ))}
-               </ul>
+               <div className="space-y-4 flex-grow">
+                  <div>
+                      <h3 className="text-sm font-bold text-slate-500 mb-1">Payment</h3>
+                      <p className="text-slate-700 dark:text-slate-300">{summary.commercialTerms.paymentTerms}</p>
+                  </div>
+                  <div>
+                      <h3 className="text-sm font-bold text-slate-500 mb-1">Deliverables</h3>
+                      <p className="text-slate-700 dark:text-slate-300">{summary.commercialTerms.deliverables}</p>
+                  </div>
+                  <div>
+                      <h3 className="text-sm font-bold text-slate-500 mb-1">Scope</h3>
+                      <p className="text-slate-700 dark:text-slate-300">{summary.commercialTerms.serviceScope}</p>
+                  </div>
+               </div>
             </div>
 
-            {/* 3. Rights & Benefits */}
+            {/* 3. Risk Highlights */}
             <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-               <div className="flex items-center mb-6">
-                  <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg mr-3">
-                     <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">What You Get</h2>
-               </div>
-               <ul className="space-y-4 flex-grow">
-                  {summary.rights.map((item, i) => (
-                     <li key={i} className="flex items-start text-slate-700 dark:text-slate-300">
-                        <span className="mr-3 mt-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full flex-shrink-0"></span>
-                        <span className="leading-relaxed">{item}</span>
-                     </li>
-                  ))}
-               </ul>
-            </div>
-         </div>
-
-         {/* 4. Money & Commercials */}
-         <div className="bg-slate-50 dark:bg-slate-950/50 rounded-[32px] p-8 md:p-10 border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center mb-6">
-                <div className="p-2 bg-white dark:bg-slate-800 rounded-lg mr-3 shadow-sm">
-                   <DollarSign className="h-5 w-5 text-slate-900 dark:text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Money & Commercials</h2>
-            </div>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-               {summary.commercials}
-            </p>
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* 5. Exit Strategy */}
-            <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
-               <div className="flex items-center mb-6">
-                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg mr-3">
-                     <LogOut className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                  </div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">How You Can Exit</h2>
-               </div>
-               <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                  {summary.exit}
-               </p>
-            </div>
-
-            {/* 6. Risk & Liability */}
-            <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
                <div className="flex items-center mb-6">
                   <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg mr-3">
                      <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Risk & Liability</h2>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Risk Highlights</h2>
                </div>
-               <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                  {summary.risk}
-               </p>
+               <div className="space-y-4 flex-grow">
+                  <div>
+                      <h3 className="text-sm font-bold text-slate-500 mb-1">Major Risks</h3>
+                      <ul className="list-disc list-inside text-slate-700 dark:text-slate-300">
+                          {summary.riskHighlights.majorRisks.map((risk, i) => (
+                              <li key={i}>{risk}</li>
+                          ))}
+                      </ul>
+                  </div>
+                  <div>
+                      <h3 className="text-sm font-bold text-slate-500 mb-1">Financial Exposure</h3>
+                      <p className="text-slate-700 dark:text-slate-300">{summary.riskHighlights.financialExposure}</p>
+                  </div>
+               </div>
             </div>
          </div>
 
-         {/* 7. Power Balance */}
-         <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 rounded-[32px] p-8 md:p-10 text-white shadow-lg">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Control & Power Balance</h2>
-            <p className="text-lg font-medium leading-relaxed opacity-90">
-               {summary.powerBalance}
-            </p>
-         </div>
+         {/* 4. Missing Protections */}
+         {summary.missingProtections.length > 0 && (
+             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[32px] p-8 md:p-10 border border-amber-100 dark:border-amber-900/30">
+                <div className="flex items-center mb-6">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg mr-3">
+                       <ListPlus className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-200">Missing Protections</h2>
+                </div>
+                <ul className="space-y-2">
+                   {summary.missingProtections.map((item, i) => (
+                      <li key={i} className="flex items-start text-amber-800 dark:text-amber-300">
+                         <span className="mr-3 mt-1.5 w-1.5 h-1.5 bg-amber-500 rounded-full flex-shrink-0"></span>
+                         <span className="leading-relaxed">{item}</span>
+                      </li>
+                   ))}
+                </ul>
+             </div>
+         )}
 
-         {/* 8. Top 3 Takeaways */}
-         <div className="bg-indigo-50 dark:bg-indigo-900/10 rounded-[32px] p-8 md:p-10 border border-indigo-100 dark:border-indigo-900/30">
-            <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-200 mb-8">3 Things To Know Before Signing</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {summary.top3Takeaways.map((takeaway, i) => (
-                  <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-indigo-50 dark:border-indigo-900/20 relative">
-                     <div className="absolute -top-4 -left-2 text-4xl font-bold text-indigo-100 dark:text-indigo-900/40 select-none">
-                        {i + 1}
-                     </div>
-                     <p className="text-slate-700 dark:text-slate-300 font-medium relative z-10 leading-relaxed">
-                        {takeaway}
-                     </p>
-                  </div>
-               ))}
+         {/* 5. Overall Assessment */}
+         <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 rounded-[32px] p-8 md:p-10 text-white shadow-lg">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Overall Assessment</h2>
+            <p className="text-lg font-medium leading-relaxed opacity-90">
+               {summary.overallAssessment}
+            </p>
+            <div className="mt-6 pt-6 border-t border-white/10">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Recommendation</h3>
+                <p className="text-xl font-bold text-white">{summary.recommendation}</p>
             </div>
          </div>
 

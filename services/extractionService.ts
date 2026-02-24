@@ -85,8 +85,8 @@ const countSections = (text: string): number => {
 const extractPdfText = async (file: File): Promise<{ text: string, pages: number }> => {
   try {
     if (!pdfjsModulePromise) {
-      // Import the library from esm.sh to match importmap
-      pdfjsModulePromise = import('https://esm.sh/pdfjs-dist@4.0.189');
+      // @ts-ignore
+      pdfjsModulePromise = import('pdfjs-dist');
     }
     const pdfjsLib = await pdfjsModulePromise;
     

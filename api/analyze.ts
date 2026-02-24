@@ -36,20 +36,72 @@ const analysisSchema: Schema = {
     marketComparison: { type: Type.STRING },
     executiveSummary: { type: Type.STRING },
     signedAsIsOutcome: { type: Type.STRING, description: "A realistic scenario-based summary of consequences if signed as-is." },
-    contractSummary: {
+    
+    categoryScores: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          category: { type: Type.STRING },
+          score: { type: Type.INTEGER },
+          weight: { type: Type.INTEGER },
+          reasoning: { type: Type.STRING },
+          relevantClauses: { type: Type.ARRAY, items: { type: Type.STRING } }
+        },
+        required: ["category", "score", "weight", "reasoning", "relevantClauses"]
+      }
+    },
+
+    professionalSummary: {
       type: Type.OBJECT,
       properties: {
-        executiveSummary: { type: Type.STRING },
-        obligations: { type: Type.ARRAY, items: { type: Type.STRING } },
-        rights: { type: Type.ARRAY, items: { type: Type.STRING } },
-        commercials: { type: Type.STRING },
-        exit: { type: Type.STRING },
-        risk: { type: Type.STRING },
-        powerBalance: { type: Type.STRING },
-        top3Takeaways: { type: Type.ARRAY, items: { type: Type.STRING } }
+        overview: {
+          type: Type.OBJECT,
+          properties: {
+            natureOfAgreement: { type: Type.STRING },
+            partiesInvolved: { type: Type.ARRAY, items: { type: Type.STRING } },
+            duration: { type: Type.STRING },
+            corePurpose: { type: Type.STRING }
+          },
+          required: ["natureOfAgreement", "partiesInvolved", "duration", "corePurpose"]
+        },
+        commercialTerms: {
+          type: Type.OBJECT,
+          properties: {
+            paymentTerms: { type: Type.STRING },
+            deliverables: { type: Type.STRING },
+            serviceScope: { type: Type.STRING }
+          },
+          required: ["paymentTerms", "deliverables", "serviceScope"]
+        },
+        riskHighlights: {
+          type: Type.OBJECT,
+          properties: {
+            majorRisks: { type: Type.ARRAY, items: { type: Type.STRING } },
+            financialExposure: { type: Type.STRING },
+            legalExposure: { type: Type.STRING }
+          },
+          required: ["majorRisks", "financialExposure", "legalExposure"]
+        },
+        missingProtections: { type: Type.ARRAY, items: { type: Type.STRING } },
+        overallAssessment: { type: Type.STRING },
+        recommendation: { type: Type.STRING, enum: ["Accept as is", "Negotiate specific clauses", "Reject", "Escalate to legal counsel"] }
       },
-      required: ["executiveSummary", "obligations", "rights", "commercials", "exit", "risk", "powerBalance", "top3Takeaways"]
+      required: ["overview", "commercialTerms", "riskHighlights", "missingProtections", "overallAssessment", "recommendation"]
     },
+
+    decision: {
+      type: Type.OBJECT,
+      properties: {
+        status: { type: Type.STRING, enum: ["Safe to Sign", "Sign with Changes", "High Risk – Negotiate", "Do Not Sign"] },
+        color: { type: Type.STRING, enum: ["Green", "Yellow", "Orange", "Red"] },
+        confidenceScore: { type: Type.INTEGER },
+        reasoning: { type: Type.ARRAY, items: { type: Type.STRING } },
+        financialRiskEstimate: { type: Type.STRING }
+      },
+      required: ["status", "color", "confidenceScore", "reasoning"]
+    },
+
     factors: {
       type: Type.ARRAY,
       items: {
@@ -85,13 +137,14 @@ const analysisSchema: Schema = {
           impact: { type: Type.STRING },
           deviation: { type: Type.STRING },
           action: { type: Type.STRING },
-          reference: { type: Type.STRING }
+          reference: { type: Type.STRING },
+          severity: { type: Type.STRING, enum: ["Low", "Medium", "High", "Critical"] }
         },
-        required: ["title", "technicalTerm", "riskType", "worstCase", "impact", "deviation", "action", "reference"],
+        required: ["title", "technicalTerm", "riskType", "worstCase", "impact", "deviation", "action", "reference", "severity"],
       },
     },
   },
-  required: ["score", "verdict", "confidence", "confidenceReason", "riskAnchor", "analyzedRole", "marketComparison", "executiveSummary", "signedAsIsOutcome", "contractSummary", "factors", "missingClauses", "negotiationMoves", "topRisks", "coverage"],
+  required: ["score", "verdict", "confidence", "confidenceReason", "riskAnchor", "analyzedRole", "marketComparison", "executiveSummary", "signedAsIsOutcome", "categoryScores", "professionalSummary", "decision", "factors", "missingClauses", "negotiationMoves", "topRisks", "coverage"],
 };
 
 const anchorSchema: Schema = {
@@ -212,10 +265,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       First, check if the input text looks like a legal contract. If not, SET verdict to INVALID_DOCUMENT.
       If it is a contract, proceed:
       GOAL: Generate a coherent, business-focused contract summary in plain English.
-      1. Identify up to 5 Critical Issues.
-      2. Provide a "If Signed As-Is" Consequence Summary.
-      3. Generate a "Risk Anchor".
-      4. GENERATE "Contract Summary" object with executiveSummary, obligations, rights, commercials, exit, risk, powerBalance, and top3Takeaways.
+      
+      1. SCORING SYSTEM (0-100):
+         Calculate the "score" based on these weighted categories:
+         - Liability & Indemnity (25%)
+         - Payment Terms & Financial Risk (15%)
+         - Termination Clauses (15%)
+         - IP Ownership (15%)
+         - Confidentiality & Data Protection (10%)
+         - Jurisdiction & Governing Law (5%)
+         - Ambiguity / Unclear Language (10%)
+         - Missing Critical Clauses (5%)
+         
+         Populate "categoryScores" with the score (0-100) for each category, the weight, reasoning, and relevant clauses.
+         The final "score" should be the weighted aggregate.
+
+      2. PROFESSIONAL SUMMARY:
+         Populate "professionalSummary" with:
+         - Overview (Nature, Parties, Duration, Purpose)
+         - Commercial Terms (Payment, Deliverables, Scope)
+         - Risk Highlights (Major Risks, Financial Exposure, Legal Exposure)
+         - Missing Protections
+         - Overall Assessment
+         - Recommendation (Accept as is, Negotiate specific clauses, Reject, Escalate to legal counsel)
+
+      3. DECISION ENGINE:
+         Populate "decision" with:
+         - Status (Safe to Sign, Sign with Changes, High Risk – Negotiate, Do Not Sign)
+         - Color (Green, Yellow, Orange, Red)
+         - Confidence Score (0-100)
+         - Reasoning (3-5 bullet points)
+         - Financial Risk Estimate (if possible)
+
+      4. Identify up to 5 Critical Issues ("topRisks") with severity (Low, Medium, High, Critical).
+      5. Provide a "If Signed As-Is" Consequence Summary ("signedAsIsOutcome").
+      6. Generate a "Risk Anchor" ("riskAnchor").
+      7. Populate "factors" (A-K) for backward compatibility (map from categories if needed).
+      
       Text: "${text.substring(0, 150000)}" 
     `;
 

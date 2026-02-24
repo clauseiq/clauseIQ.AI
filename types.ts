@@ -2,7 +2,8 @@
 export enum RiskLevel {
   LOW = 'Low',
   MEDIUM = 'Medium',
-  HIGH = 'High'
+  HIGH = 'High',
+  CRITICAL = 'Critical'
 }
 
 export interface RiskItem {
@@ -14,6 +15,7 @@ export interface RiskItem {
   deviation?: string; // How it deviates from market standard
   action: string; // What to do
   reference: string; // Clause number, section title, or quote
+  severity: RiskLevel;
 }
 
 export interface ClauseBreakdown {
@@ -24,15 +26,67 @@ export interface ClauseBreakdown {
   riskReason: string;
 }
 
-export interface ContractSummary {
-  executiveSummary: string; // What this contract is about, paying whom, etc.
-  obligations: string[]; // Bullet points: What user MUST do
-  rights: string[]; // Bullet points: What user receives
-  commercials: string; // Money, penalties, lock-ins
-  exit: string; // Termination, notice periods
-  risk: string; // Liability, uncapped risks
-  powerBalance: string; // Who has control
-  top3Takeaways: string[]; // 3 most important things
+export interface CategoryScore {
+  category: string; // e.g., "Liability & Indemnity"
+  score: number; // 0-100
+  weight: number; // Percentage weight (e.g., 25)
+  reasoning: string; // Why this score was given
+  relevantClauses: string[]; // Excerpts
+}
+
+export interface ProfessionalSummary {
+  overview: {
+    natureOfAgreement: string;
+    partiesInvolved: string[];
+    duration: string;
+    corePurpose: string;
+  };
+  commercialTerms: {
+    paymentTerms: string;
+    deliverables: string;
+    serviceScope: string;
+  };
+  riskHighlights: {
+    majorRisks: string[];
+    financialExposure: string;
+    legalExposure: string;
+  };
+  missingProtections: string[];
+  overallAssessment: string;
+  recommendation: 'Accept as is' | 'Negotiate specific clauses' | 'Reject' | 'Escalate to legal counsel';
+}
+
+export interface Decision {
+  status: 'Safe to Sign' | 'Sign with Changes' | 'High Risk – Negotiate' | 'Do Not Sign';
+  color: 'Green' | 'Yellow' | 'Orange' | 'Red';
+  confidenceScore: number;
+  reasoning: string[];
+  financialRiskEstimate?: string;
+}
+
+export interface AnalysisResult {
+  score: number; // 0-100 (Weighted Aggregate)
+  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk'; 
+  confidence: 'High' | 'Medium' | 'Low';
+  confidenceReason: string;
+  riskAnchor?: string; // Psychological hook
+  
+  // New Structured Data
+  categoryScores: CategoryScore[];
+  professionalSummary: ProfessionalSummary;
+  decision: Decision;
+  
+  // Legacy/Helper fields
+  analyzedRole: string; // The perspective automatically identified by AI
+  marketComparison: string; // Text explaining how this compares to norms
+  executiveSummary: string; // "Why this verdict" (Keep for backward compat or simple view)
+  signedAsIsOutcome: string; // "If Signed As-Is" Consequence Summary
+  factors: FactorEvaluation[]; // The 11 factors (A-K) - Keep for backward compat if needed, or map to categories
+  topRisks: RiskItem[]; // "Red Flags"
+  negotiationMoves: string[]; // Specific edits/asks
+  missingClauses: string[]; // What should be there but isn't
+  clauses?: ClauseBreakdown[]; // Deprecated, kept for type compatibility with old records
+  coverage: DocumentCoverage;
 }
 
 export interface DocumentCoverage {
@@ -45,25 +99,6 @@ export interface FactorEvaluation {
   factor: string; // e.g. "Payment & Pricing Fairness"
   status: 'Healthy' | 'Neutral' | 'Risky';
   detail: string;
-}
-
-export interface AnalysisResult {
-  score: number; // 0-100
-  verdict: 'Market-Standard' | 'Negotiable' | 'One-Sided' | 'High Risk'; 
-  confidence: 'High' | 'Medium' | 'Low';
-  confidenceReason: string;
-  riskAnchor?: string; // Psychological hook
-  contractSummary?: ContractSummary; // New Business Summary (Replaces clauses)
-  analyzedRole: string; // The perspective automatically identified by AI
-  marketComparison: string; // Text explaining how this compares to norms
-  executiveSummary: string; // "Why this verdict"
-  signedAsIsOutcome: string; // "If Signed As-Is" Consequence Summary
-  factors: FactorEvaluation[]; // The 11 factors (A-K)
-  topRisks: RiskItem[]; // "Red Flags"
-  negotiationMoves: string[]; // Specific edits/asks
-  missingClauses: string[]; // What should be there but isn't
-  clauses?: ClauseBreakdown[]; // Deprecated, kept for type compatibility with old records
-  coverage: DocumentCoverage;
 }
 
 export interface ExtractionMetadata {
