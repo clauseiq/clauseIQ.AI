@@ -1,112 +1,87 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Razorpay from 'razorpay';
-import {
-  applySecurityHeaders,
-  checkRateLimit,
-  validatePlanType,
-  validateCurrency,
-  logSecurityEvent,
-  extractBearerToken,
-  isBodyTooLarge,
-} from './security';
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-const siteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://clauseiq.com';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || '',
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
-// ─── Authoritative Server-Side Pricing ────────────────────────────────────────
-// NEVER trust price from frontend — always derive from this map.
-const PRICING: Record<string, Record<string, number>> = {
-  INR: {
-    pro_monthly: 249900, // ₹2,499 in paise
-    topup_5: 79900,      // ₹799 in paise
-  },
-  USD: {
-    pro_monthly: 2900,   // $29 in cents
-    topup_5: 900,        // $9 in cents
-  },
-};
-
-// ─── Handler ──────────────────────────────────────────────────────────────────
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+const siteUrl = process.env.VITE_SITE_URL || 'http://localhost:3000';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  applySecurityHeaders(res, siteUrl);
+  // CORS configuration
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', siteUrl);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  // Body size guard
-  if (isBodyTooLarge(req.body)) {
-    return res.status(413).json({ error: 'Request body too large.' });
-  }
-
-  // Rate limit — checkout is very sensitive
-  const { allowed } = checkRateLimit(req, '/api/checkout');
-  if (!allowed) {
-    logSecurityEvent('rate_limit_exceeded', { endpoint: '/api/checkout' });
-    return res.status(429).json({ error: 'Too many requests. Please wait before trying again.' });
-  }
-
-  // Auth
-  const token = extractBearerToken(req.headers.authorization as string);
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    global: { headers: { Authorization: authHeader } }
   });
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !user || !user.email) return res.status(401).json({ error: 'Invalid session.' });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !user.email) return res.status(401).json({ error: 'Invalid session' });
 
-  // ── Server-side input validation ──────────────────────────────────────────────
-  const planType = validatePlanType(req.body?.planType);
-  if (!planType) {
-    logSecurityEvent('invalid_plan_requested', { userId: user.id, plan: req.body?.planType });
-    return res.status(400).json({ error: 'Invalid plan type.' });
-  }
-
-  const currency = validateCurrency(req.body?.userCurrency);
-  const amount = PRICING[currency]?.[planType];
-
-  if (!amount) {
-    return res.status(400).json({ error: 'Unable to determine pricing. Contact support.' });
-  }
+  const { planType, userCurrency } = req.body; // 'pro_monthly' or 'topup_5', currency 'INR' or 'USD'
 
   try {
-    // Clean receipt ID
+    // Determine Currency and Amount
+    // Default to USD if not explicitly INR
+    const currency = userCurrency === 'INR' ? 'INR' : 'USD';
+    
+    let amount;
+    let description;
+
+    if (currency === 'INR') {
+        // INR Pricing
+        amount = planType === 'topup_5' ? 79900 : 249900; // ₹799 or ₹2499 (in paise)
+    } else {
+        // USD Pricing
+        amount = planType === 'topup_5' ? 900 : 2900; // $9 or $29 (in cents)
+    }
+
+    if (planType === 'topup_5') {
+        description = "5 Analysis Credits Top-up";
+    } else {
+        description = "Pro Plan Subscription";
+    }
+
+    // Razorpay receipt ID allows only alphanumeric and underscores.
     const cleanUserId = user.id.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
     const receiptId = `rcpt_${cleanUserId}_${Date.now()}`;
 
-    const order = await razorpay.orders.create({
-      amount,
-      currency,
+    const options = {
+      amount: amount, 
+      currency: currency,
       receipt: receiptId,
       notes: {
-        userId: user.id,       // For server-side lookup in /api/verify
+        userId: user.id,
         userEmail: user.email,
-        planType,              // Authoritative source — read back in /api/verify
-      },
-    });
+        planType: planType || 'pro_monthly'
+      }
+    };
 
-    // Return ONLY orderId, keyId, amount, currency — NEVER the secret
-    return res.status(200).json({
-      orderId: order.id,
-      keyId: process.env.RAZORPAY_KEY_ID, // Public key ID is safe to expose
-      amount,
-      currency,
+    const order = await razorpay.orders.create(options);
+
+    // We return the Key ID here so the frontend doesn't need it hardcoded
+    return res.status(200).json({ 
+      orderId: order.id, 
+      keyId: process.env.RAZORPAY_KEY_ID, 
+      amount: options.amount,
+      currency: options.currency
     });
 
   } catch (error: any) {
     console.error('Razorpay Order Error:', error);
-    logSecurityEvent('checkout_error', { userId: user.id, message: error?.message });
-    return res.status(500).json({ error: 'Failed to create payment order. Please try again.' });
+    return res.status(500).json({ error: error.message || "Failed to create order" });
   }
 }

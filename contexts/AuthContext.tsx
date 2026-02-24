@@ -7,6 +7,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loginWithEmail: (email: string) => Promise<{ error: string | null }>;
   loginWithGoogle: () => Promise<{ error: string | null }>;
+  signupWithEmailPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  loginWithEmailPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   incrementUsage: () => Promise<boolean>; 
   hasAccess: boolean;
@@ -135,6 +137,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const signupWithEmailPassword = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) return { error: "Configuration Error." };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: "Signup failed." };
+    }
+  };
+
+  const loginWithEmailPassword = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) return { error: "Configuration Error." };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: "Login failed." };
+    }
+  };
+
   const loginWithGoogle = async () => {
     if (!isSupabaseConfigured()) return { error: "Configuration Error." };
     try {
@@ -206,7 +235,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       user, 
       isAuthenticated: !!user, 
       loginWithEmail, 
-      loginWithGoogle, 
+      loginWithGoogle,
+      signupWithEmailPassword,
+      loginWithEmailPassword, 
       logout, 
       incrementUsage, 
       hasAccess, 

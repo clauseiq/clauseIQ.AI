@@ -9,9 +9,11 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialView = 'login' }) => {
-  const { loginWithEmail, loginWithGoogle } = useAuth();
+  const { loginWithEmail, loginWithGoogle, signupWithEmailPassword, loginWithEmailPassword } = useAuth();
   
   const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authMethod, setAuthMethod] = useState<'password' | 'magic-link'>('password');
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(initialView === 'signup');
@@ -28,10 +30,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialView = 'lo
     if (emailInput.trim()) {
       setIsLoggingIn(true);
       setAuthMessage(null);
-      const { error } = await loginWithEmail(emailInput);
+      
+      let error = null;
+
+      if (authMethod === 'magic-link') {
+        const res = await loginWithEmail(emailInput);
+        error = res.error;
+        if (!error) setStep('success');
+      } else {
+        // Password Auth
+        if (isSignUp) {
+          const res = await signupWithEmailPassword(emailInput, passwordInput);
+          error = res.error;
+          if (!error) {
+             // For signup, we usually need to confirm email, so show success/check inbox
+             setStep('success');
+          }
+        } else {
+          const res = await loginWithEmailPassword(emailInput, passwordInput);
+          error = res.error;
+          if (!error) {
+            onClose(); // Close modal on successful login
+          }
+        }
+      }
+
       setIsLoggingIn(false);
       if (error) setAuthMessage(`Error: ${error}`);
-      else setStep('success');
     }
   };
 
@@ -90,7 +115,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialView = 'lo
               <div className="text-center animate-fade-in py-10">
                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-6"><Mail className="h-10 w-10 text-emerald-600 dark:text-emerald-400" /></div>
                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check your inbox!</h3>
-                 <p className="text-slate-500 dark:text-slate-400 max-w-xs mx-auto mb-8">Login link sent to <span className="font-bold">{emailInput}</span>.</p>
+                 <p className="text-slate-500 dark:text-slate-400 max-w-xs mx-auto mb-8">
+                    {authMethod === 'magic-link' 
+                        ? <>Login link sent to <span className="font-bold">{emailInput}</span>.</>
+                        : <>Confirmation link sent to <span className="font-bold">{emailInput}</span>. Please verify your email to continue.</>
+                    }
+                 </p>
                  <button onClick={onClose} className="text-blue-600 font-bold hover:underline">Close Window</button>
               </div>
            ) : (
@@ -112,18 +142,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialView = 'lo
                  </div>
 
                  <form onSubmit={handleAuthSubmit} className="space-y-4">
-                    <input type="email" required value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white" placeholder="name@company.com" />
+                    <input 
+                        type="email" 
+                        required 
+                        value={emailInput} 
+                        onChange={(e) => setEmailInput(e.target.value)} 
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white" 
+                        placeholder="name@company.com" 
+                    />
+                    
+                    {authMethod === 'password' && (
+                        <input 
+                            type="password" 
+                            required 
+                            value={passwordInput} 
+                            onChange={(e) => setPasswordInput(e.target.value)} 
+                            className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white" 
+                            placeholder="Password" 
+                            minLength={6}
+                        />
+                    )}
+
                     {isSignUp && (
                         <div className="flex items-start space-x-3 p-1">
                             <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                             <label htmlFor="terms" className="text-xs text-slate-500 dark:text-slate-400 cursor-pointer">I agree to the <a href="/terms" className="text-blue-600 underline">Terms</a> and <a href="/privacy" className="text-blue-600 underline">Privacy Policy</a>.</label>
                         </div>
                     )}
+
                     <button type="submit" disabled={isLoggingIn} className="w-full gradient-bg text-white font-bold py-4 rounded-xl hover:opacity-90 shadow-lg active:scale-[0.98] disabled:opacity-70 flex items-center justify-center">
                         {isLoggingIn ? <Zap className="h-4 w-4 mr-2 animate-pulse" /> : <ArrowRight className="h-4 w-4 ml-2" />}
-                        {isLoggingIn ? "Sending..." : (isSignUp ? 'Create Free Account' : 'Send Magic Link')}
+                        {isLoggingIn ? "Processing..." : (isSignUp ? 'Create Account' : (authMethod === 'magic-link' ? 'Send Magic Link' : 'Log In'))}
                     </button>
                  </form>
+
+                 <div className="text-center">
+                    <button 
+                        type="button"
+                        onClick={() => setAuthMethod(authMethod === 'password' ? 'magic-link' : 'password')}
+                        className="text-xs text-slate-500 hover:text-blue-600 underline"
+                    >
+                        {authMethod === 'password' ? 'Use Magic Link instead' : 'Use Password instead'}
+                    </button>
+                 </div>
+
                  {authMessage && <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-lg text-center animate-shake">{authMessage}</div>}
                </div>
 
