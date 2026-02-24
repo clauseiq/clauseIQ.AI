@@ -90,8 +90,10 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
     }
     const pdfjsLib = await pdfjsModulePromise;
     
-    // Configure worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+    // Configure worker with dynamic version to match installed package
+    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+    }
 
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ 
@@ -131,7 +133,8 @@ const extractPdfText = async (file: File): Promise<{ text: string, pages: number
     return { text: fullText, pages: pdf.numPages };
   } catch (err: any) {
     console.error("PDF Parsing Error:", err);
-    throw new Error(err.name === 'PasswordException' ? "PDF is password protected." : "Failed to parse PDF structure.");
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(err.name === 'PasswordException' ? "PDF is password protected." : `Failed to parse PDF structure: ${msg}`);
   }
 };
 
