@@ -251,7 +251,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     // Helper for chunking large texts
-    const chunkText = (text: string, chunkSize: number = 50000): string[] => {
+    const chunkText = (text: string, chunkSize: number = 25000): string[] => {
       const chunks = [];
       for (let i = 0; i < text.length; i += chunkSize) {
         chunks.push(text.substring(i, i + chunkSize));
@@ -266,14 +266,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         1. Detect key clauses.
         2. Label high-risk areas (Liability, Indemnity, Termination, IP).
         3. Extract key commercial terms.
-        Output a concise summary (max 150 words) of findings.
-        Text: "${chunkText.substring(0, 50000)}"
+        Output a concise summary (max 100 words) of findings. Bullet points only.
+        Text: "${chunkText.substring(0, 30000)}"
       `;
       const result = await ai.models.generateContent({
         model: 'gemini-flash-latest',
         contents: chunkPrompt,
         config: {
-          systemInstruction: "You are a fast contract analyzer. Be concise.",
+          systemInstruction: "You are a fast contract analyzer. Be extremely concise.",
           temperature: 0,
         }
       });
@@ -282,8 +282,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let contextForAnalysis = text;
 
-    // PIPELINE LOGIC: If text is huge (> 75k chars), use Map-Reduce
-    if (text.length > 75000) {
+    // PIPELINE LOGIC: If text is large (> 25k chars), use Map-Reduce to speed up processing
+    if (text.length > 25000) {
        const chunks = chunkText(text);
        // Parallel execution
        const summaries = await Promise.all(chunks.map(chunk => analyzeChunk(chunk)));
@@ -293,24 +293,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const prompt = `
       You are Clause IQ.
       Context: Jurisdiction: ${country}, Type: ${contractType}
-      Task: Analyze the provided contract content (full text or merged summaries) and generate a structured risk assessment.
+      Task: Analyze the provided contract content and generate a structured risk assessment.
       
       *** CRITICAL VALIDATION STEP ***
       First, check if the input looks like a legal contract. If not, SET verdict to INVALID_DOCUMENT.
       
       GOAL: Generate a coherent, business-focused contract summary in plain English.
+      SPEED OPTIMIZATION: Keep all text fields extremely concise (max 1-2 sentences per field).
       
       1. SCORING SYSTEM (0-100):
-         Calculate the "score" based on weighted categories (Liability, Payment, Termination, IP, Confidentiality, Jurisdiction).
-         Populate "categoryScores".
+         Calculate the "score" based on weighted categories.
+         Populate "categoryScores". Reasoning must be 1 sentence max.
 
       2. PROFESSIONAL SUMMARY:
-         Populate "professionalSummary" with Overview, Commercial Terms, Risk Highlights, Missing Protections, Assessment, Recommendation.
+         Populate "professionalSummary". 
+         - Overview: Max 2 sentences.
+         - Risks: Bullet points, max 10 words each.
+         - Recommendation: 1 sentence.
 
       3. DECISION ENGINE:
-         Populate "decision" with Status, Color, Confidence, Reasoning.
+         Populate "decision". Reasoning: 3 bullet points max, 1 sentence each.
 
-      4. Identify up to 5 Critical Issues ("topRisks") with severity.
+      4. Identify up to 5 Critical Issues ("topRisks").
       
       Input Content: "${contextForAnalysis.substring(0, 150000)}" 
     `;
