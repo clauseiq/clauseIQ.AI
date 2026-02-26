@@ -236,52 +236,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        return res.status(200).json(JSON.parse(response.text!));
     }
 
-    await supabase.rpc('increment_analyses', { user_id: user.id });
+    const systemInstruction = `
+      Your objective is to analyze contracts efficiently while maintaining high-quality legal reasoning.
+      CORE PRINCIPLES:
+      * Faster performance comes from workflow optimization.
+      * Prefer concise bullet points and structured responses.
+      * Focus only on major risks, strengths, and legally meaningful insights.
+      * Default maximum output length: ~200 words for summaries unless explicitly asked for more.
+      
+      OUTPUT EFFICIENCY RULES:
+      * Avoid long explanations.
+      * Present high-level conclusions first.
+      * Ignore formatting artifacts (OCR noise, headers).
+    `;
+
+    // Helper for chunking large texts
+    const chunkText = (text: string, chunkSize: number = 50000): string[] => {
+      const chunks = [];
+      for (let i = 0; i < text.length; i += chunkSize) {
+        chunks.push(text.substring(i, i + chunkSize));
+      }
+      return chunks;
+    };
+
+    // Fast Stage A: Analyze a chunk
+    const analyzeChunk = async (chunkText: string): Promise<string> => {
+      const chunkPrompt = `
+        Stage A - Fast Structural Analysis:
+        1. Detect key clauses.
+        2. Label high-risk areas (Liability, Indemnity, Termination, IP).
+        3. Extract key commercial terms.
+        Output a concise summary (max 150 words) of findings.
+        Text: "${chunkText.substring(0, 50000)}"
+      `;
+      const result = await ai.models.generateContent({
+        model: 'gemini-flash-latest',
+        contents: chunkPrompt,
+        config: {
+          systemInstruction: "You are a fast contract analyzer. Be concise.",
+          temperature: 0,
+        }
+      });
+      return result.text || "";
+    };
+
+    let contextForAnalysis = text;
+
+    // PIPELINE LOGIC: If text is huge (> 75k chars), use Map-Reduce
+    if (text.length > 75000) {
+       const chunks = chunkText(text);
+       // Parallel execution
+       const summaries = await Promise.all(chunks.map(chunk => analyzeChunk(chunk)));
+       contextForAnalysis = "MERGED SUMMARIES OF CONTRACT SECTIONS:\n" + summaries.join("\n\n");
+    }
 
     const prompt = `
-      You are Clause IQ, the "Contract Intelligence Summarizer".
+      You are Clause IQ.
       Context: Jurisdiction: ${country}, Type: ${contractType}
-      Task: Analyze the text provided.
+      Task: Analyze the provided contract content (full text or merged summaries) and generate a structured risk assessment.
       
       *** CRITICAL VALIDATION STEP ***
-      First, check if the input text looks like a legal contract. If not, SET verdict to INVALID_DOCUMENT.
-      If it is a contract, proceed:
+      First, check if the input looks like a legal contract. If not, SET verdict to INVALID_DOCUMENT.
+      
       GOAL: Generate a coherent, business-focused contract summary in plain English.
       
       1. SCORING SYSTEM (0-100):
-         Calculate the "score" based on these weighted categories:
-         - Liability & Indemnity (25%)
-         - Payment Terms & Financial Risk (15%)
-         - Termination Clauses (15%)
-         - IP Ownership (15%)
-         - Confidentiality & Data Protection (10%)
-         - Jurisdiction & Governing Law (5%)
-         - Ambiguity / Unclear Language (10%)
-         - Missing Critical Clauses (5%)
-         
-         Populate "categoryScores" with the score (0-100) for each category, the weight, reasoning, and relevant clauses.
-         The final "score" should be the weighted aggregate.
+         Calculate the "score" based on weighted categories (Liability, Payment, Termination, IP, Confidentiality, Jurisdiction).
+         Populate "categoryScores".
 
       2. PROFESSIONAL SUMMARY:
-         Populate "professionalSummary" with:
-         - Overview (Nature, Parties, Duration, Purpose)
-         - Commercial Terms (Payment, Deliverables, Scope)
-         - Risk Highlights (Major Risks, Financial Exposure, Legal Exposure)
-         - Missing Protections
-         - Overall Assessment
-         - Recommendation (Accept as is, Negotiate specific clauses, Reject, Escalate to legal counsel)
+         Populate "professionalSummary" with Overview, Commercial Terms, Risk Highlights, Missing Protections, Assessment, Recommendation.
 
       3. DECISION ENGINE:
-         Populate "decision" with:
-         - Status (Safe to Sign, Sign with Changes, High Risk – Negotiate, Do Not Sign)
-         - Color (Green, Yellow, Orange, Red)
-         - Confidence Score (0-100)
-         - Reasoning (3-5 bullet points)
-         - Financial Risk Estimate (if possible)
+         Populate "decision" with Status, Color, Confidence, Reasoning.
 
-      4. Identify up to 5 Critical Issues ("topRisks") with severity (Low, Medium, High, Critical).
+      4. Identify up to 5 Critical Issues ("topRisks") with severity.
       
-      Text: "${text.substring(0, 150000)}" 
+      Input Content: "${contextForAnalysis.substring(0, 150000)}" 
     `;
 
     const generateWithRetry = async (retries = 3) => {
@@ -294,6 +325,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               responseMimeType: "application/json",
               responseSchema: analysisSchema,
               temperature: 0, 
+              systemInstruction: systemInstruction,
               seed: generateSeed(text + country + contractType + "full"),
             },
           });
